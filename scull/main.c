@@ -3,6 +3,8 @@
 #include <linux/module.h>   /*module_init */
 #include <linux/init.h>
 #include <linux/slab.h>     /* kmalloc */
+#include <linux/seq_file.h>
+#include <linux/proc_fs.h>
 
 #include "scull.h"
 
@@ -23,6 +25,29 @@ struct file_operations scull_fops = {
 	.open =     NULL,
 	.release =  NULL,
 };
+
+int scull_read_procmem(struct seq_file *s, void *v)
+{
+    return 0;
+}
+
+static int scullmem_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, scull_read_procmem, NULL);
+}
+
+static struct file_operations scullmem_proc_ops = {
+	.owner   = THIS_MODULE,
+	.open    = scullmem_proc_open,
+	.read    = NULL,
+	.llseek  = NULL,
+	.release = NULL 
+};
+
+static void scull_create_proc(void)
+{
+	proc_create("scullmem", 0, NULL, &scullmem_proc_ops);
+}
 
 static void scull_setup_cdev(struct scull_dev *dev, int index)
 {
@@ -70,6 +95,8 @@ int scull_init_module(void)
     for (i = 0; i < scull_nr_devs; i++) {
 		scull_setup_cdev(&scull_devices[i], i);
     }
+
+    scull_create_proc();
 
     return 0;
 
