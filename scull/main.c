@@ -1,10 +1,11 @@
-#include <linux/fs.h>
+#include <linux/fs.h>       /* struct file */
 #include <linux/types.h>    /* size_t */
 #include <linux/module.h>   /*module_init */
 #include <linux/init.h>
 #include <linux/slab.h>     /* kmalloc */
 #include <linux/seq_file.h>
 #include <linux/proc_fs.h>
+#include <linux/kernel.h>   /*printk,container_of*/
 
 #include "scull.h"
 
@@ -17,13 +18,26 @@ MODULE_LICENSE("Dual BSD/GPL");
 
 struct scull_dev *scull_devices;	/* allocated in scull_init_module */
 
+int scull_open(struct inode *inode, struct file *filp)
+{
+    struct scull_dev *dev;
+    dev = container_of(inode->i_cdev, struct scull_dev, cdev);
+    filp->private_data = dev;
+    return 0;
+}
+
+int scull_release(struct inode *inode, struct file *filp)
+{
+    return 0;
+}
+
 struct file_operations scull_fops = {
 	.owner =    THIS_MODULE,
 	.read =     NULL,
 	.write =    NULL,
 	.unlocked_ioctl = NULL,
-	.open =     NULL,
-	.release =  NULL,
+	.open =     scull_open,
+	.release =  scull_release,
 };
 
 static struct file_operations scullmem_proc_ops = {
@@ -31,13 +45,19 @@ static struct file_operations scullmem_proc_ops = {
 	.open    = NULL,
 	.read    = NULL,
 	.llseek  = NULL,
-	.release =NULL 
+	.release = NULL 
 };
 
 static void scull_create_proc(void)
 {
 	proc_create("scullmem", 0, NULL, &scullmem_proc_ops);
 }
+
+static void scull_remove_proc(void)
+{
+	remove_proc_entry("scullmem", NULL /* parent dir */);
+}
+
 
 static void scull_setup_cdev(struct scull_dev *dev, int index)
 {
@@ -54,7 +74,7 @@ static void scull_setup_cdev(struct scull_dev *dev, int index)
 
 void scull_cleanup_module(void)
 {
-
+    scull_remove_proc();
 }
 //start
 int scull_init_module(void)
