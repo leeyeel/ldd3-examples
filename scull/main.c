@@ -26,22 +26,12 @@ struct file_operations scull_fops = {
 	.release =  NULL,
 };
 
-int scull_read_procmem(struct seq_file *s, void *v)
-{
-    return 0;
-}
-
-static int scullmem_proc_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, scull_read_procmem, NULL);
-}
-
 static struct file_operations scullmem_proc_ops = {
 	.owner   = THIS_MODULE,
-	.open    = scullmem_proc_open,
+	.open    = NULL,
 	.read    = NULL,
 	.llseek  = NULL,
-	.release = NULL 
+	.release =NULL 
 };
 
 static void scull_create_proc(void)
@@ -96,6 +86,7 @@ int scull_init_module(void)
 		scull_setup_cdev(&scull_devices[i], i);
     }
 
+    // create proc
     scull_create_proc();
 
     return 0;
